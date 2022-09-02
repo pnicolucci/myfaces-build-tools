@@ -27,12 +27,12 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.PropertyHolder;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.PropertyMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
-import com.thoughtworks.qdox.model.Type;
+import com.thoughtworks.qdox.model.JavaType;
 
 public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingStrategy
 {
@@ -52,58 +52,58 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
     public void processComponentProperties(JavaClass clazz,
             PropertyHolder component)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
-            DocletTag tag = method.getTagByName(DOC_PROPERTY);
+            DocletTag tag = method.getTagsByName(DOC_PROPERTY).get(0);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processComponentProperty(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processComponentProperty(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, component);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_PROPERTY);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_PROPERTY);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processComponentProperty(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processComponentProperty(props, (JavaAnnotatedElement)anno, clazz,
                         method, component);
             }
         }
         
-        Type [] interfaces = clazz.getImplements();
+        List<JavaType> interfaces = clazz.getImplements();
         
         //Scan interfaces for properties to be added to this component
         //This feature allow us to have groups of functions.
-        for (int i = 0; i < interfaces.length;++i)
+        for (int i = 0; i < interfaces.size();++i)
         {
-            JavaClass intf = interfaces[i].getJavaClass();
+            JavaClass intf = (JavaClass)interfaces.get(i);
 
             //If the interfaces has a JSFComponent Doclet,
             //this is managed in other way
-            if (intf.getTagByName(DOC_COMPONENT, false) == null)
+            if (intf.getTagsByName(DOC_COMPONENT, false).get(0) == null)
             {
-                JavaMethod[] intfmethods = intf.getMethods();
-                for (int j = 0; j < intfmethods.length; ++j)
+                List<JavaMethod> intfmethods = intf.getMethods();
+                for (int j = 0; j < intfmethods.size(); ++j)
                 {
-                    JavaMethod intfmethod = intfmethods[j];
+                    JavaMethod intfmethod = intfmethods.get(j);
 
                     DocletTag tag = intfmethod.getTagByName(DOC_PROPERTY);
                     if (tag != null)
                     {
                         Map props = tag.getNamedParameterMap();
-                        processInterfaceComponentProperty(props, (AbstractJavaEntity)tag.getContext(), 
+                        processInterfaceComponentProperty(props, (JavaAnnotatedElement)tag.getContext(), 
                                 clazz, intfmethod, component);
                     }
 
-                    Annotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_PROPERTY);
+                    JavaAnnotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_PROPERTY);
                     if (anno != null)
                     {
                         Map props = anno.getNamedParameterMap();
-                        processInterfaceComponentProperty(props, (AbstractJavaEntity)anno.getContext(),
+                        processInterfaceComponentProperty(props, (JavaAnnotatedElement)anno,
                                 clazz, intfmethod, component);
                     }
                 }
@@ -112,37 +112,37 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
 
         //Scan for properties defined only on jsp (special case on myfaces 1.1,
         //this feature should not be used on typical situations)
-        DocletTag[] jspProperties = clazz.getTagsByName(DOC_JSP_PROPERTY);
-        for (int i = 0; i < jspProperties.length; ++i)
+        List<DocletTag> jspProperties = clazz.getTagsByName(DOC_JSP_PROPERTY);
+        for (int i = 0; i < jspProperties.size(); ++i)
         {
             //We have here only doclets, because this part is only for
             //solve problems with binding property on 1.1
-            DocletTag tag = jspProperties[i];
+            DocletTag tag = jspProperties.get(i);
             
             Map props = tag.getNamedParameterMap();
-            processComponentJspProperty(props, (AbstractJavaEntity)tag.getContext(), clazz,
+            processComponentJspProperty(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                     component);
         }
         
-        Annotation jspPropertyAnno = QdoxHelper.getAnnotation(clazz, DOC_JSP_PROPERTY);
+        JavaAnnotation jspPropertyAnno = QdoxHelper.getAnnotation(clazz, DOC_JSP_PROPERTY);
         if (jspPropertyAnno != null)
         {
             Map props = jspPropertyAnno.getNamedParameterMap();
-            processComponentJspProperty(props, (AbstractJavaEntity)jspPropertyAnno.getContext(),
+            processComponentJspProperty(props, (JavaAnnotatedElement)jspPropertyAnno,
                     clazz, component);
         }
         
         
-        Annotation jspAnno = QdoxHelper.getAnnotation(clazz, DOC_JSP_PROPERTIES);        
+        JavaAnnotation jspAnno = QdoxHelper.getAnnotation(clazz, DOC_JSP_PROPERTIES);        
         if (jspAnno != null)
         {
             Object jspProps = jspAnno.getNamedParameter("properties");
             
-            if (jspProps instanceof Annotation)
+            if (jspProps instanceof JavaAnnotation)
             {
-                Annotation jspPropertiesAnno = (Annotation) jspProps;
+                JavaAnnotation jspPropertiesAnno = (JavaAnnotation) jspProps;
                 Map props = jspPropertiesAnno.getNamedParameterMap();
-                processComponentJspProperty(props, (AbstractJavaEntity)jspAnno.getContext(), clazz,
+                processComponentJspProperty(props, (JavaAnnotatedElement)jspAnno, clazz,
                         component);
             }
             else
@@ -150,10 +150,10 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
                 List jspPropsList = (List) jspProps;
                 for (int i = 0; i < jspPropsList.size();i++)
                 {
-                    Annotation anno = (Annotation) jspPropsList.get(i);
+                    JavaAnnotation anno = (JavaAnnotation) jspPropsList.get(i);
 
                     Map props = anno.getNamedParameterMap();
-                    processComponentJspProperty(props, (AbstractJavaEntity)jspAnno.getContext(), clazz,
+                    processComponentJspProperty(props, (JavaAnnotatedElement)jspAnno, clazz,
                             component);
                 }
             }
@@ -161,7 +161,7 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
         }
     }
     
-    private void processComponentProperty(Map props, AbstractJavaEntity ctx,
+    private void processComponentProperty(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, PropertyHolder component)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -193,24 +193,24 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
         String deferredValueType = QdoxHelper.getString(clazz, "deferredValueType", props, null);
         Boolean faceletsOnly = QdoxHelper.getBoolean(clazz, "faceletsOnly", props, null);
 
-        Type returnType = null;
+        JavaType returnType = null;
         
         if (method.getName().startsWith("set"))
         {
-            returnType = method.getParameters()[0].getType();
+            returnType = method.getParameters().get(0).getType();
         }
         else
         {
             returnType = method.getReturns();
         }
         
-        String fullyQualifiedReturnType = returnType.getJavaClass().getFullyQualifiedName();
+        String fullyQualifiedReturnType = returnType.getFullyQualifiedName();
         
         fullyQualifiedReturnType = QdoxHelper.getFullyQualifiedClassName(clazz, fullyQualifiedReturnType);
         
-        if (returnType.isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
+        if (((JavaClass)returnType).isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
         {
-            for (int i = 0; i < returnType.getDimensions();i++)
+            for (int i = 0; i < ((JavaClass)returnType).getDimensions();i++)
             {
                 fullyQualifiedReturnType = fullyQualifiedReturnType + "[]";
             }
@@ -268,7 +268,7 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
         component.addProperty(p);
     }
     
-    private void processInterfaceComponentProperty(Map props, AbstractJavaEntity ctx,
+    private void processInterfaceComponentProperty(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, PropertyHolder component)
     {
         this.processComponentProperty(props, ctx, clazz, method, component);
@@ -286,7 +286,7 @@ public abstract class ClassMetaPropertyParsingStrategy extends ClassMetaParsingS
         }            
     }
 
-    private void processComponentJspProperty(Map props, AbstractJavaEntity ctx,
+    private void processComponentJspProperty(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, PropertyHolder component)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);

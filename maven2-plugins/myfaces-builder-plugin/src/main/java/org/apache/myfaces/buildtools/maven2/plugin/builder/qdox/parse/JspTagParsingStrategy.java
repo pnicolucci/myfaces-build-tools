@@ -18,6 +18,7 @@
  */
 package org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.AttributeMeta;
@@ -25,12 +26,12 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.TagMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
-import com.thoughtworks.qdox.model.Type;
+import com.thoughtworks.qdox.model.JavaType;
 
 /**
  * 
@@ -46,23 +47,23 @@ public class JspTagParsingStrategy extends ClassMetaParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag;
-        Annotation anno;
+        JavaAnnotation anno;
         //tag
-        tag = clazz.getTagByName(DOC_TAG, false);
+        tag = clazz.getTagsByName(DOC_TAG, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processTag(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processTag(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_TAG);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processTag(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processTag(props, (JavaAnnotatedElement)anno, clazz, model);
         }
     }
     
-    private void processTag(Map props, AbstractJavaEntity ctx,
+    private void processTag(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String longDescription = clazz.getComment();
@@ -95,43 +96,43 @@ public class JspTagParsingStrategy extends ClassMetaParsingStrategy
     private void processTagAttributes(JavaClass clazz,
             TagMeta ctag)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName(DOC_JSP_ATTRIBUTE);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processTagAttribute(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processTagAttribute(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, ctag);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_JSP_ATTRIBUTE);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_JSP_ATTRIBUTE);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processTagAttribute(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processTagAttribute(props, (JavaAnnotatedElement)anno, clazz,
                         method, ctag);
             }
         }
         
-        DocletTag[] jspProperties = clazz.getTagsByName(DOC_JSP_ATTRIBUTE);
-        for (int i = 0; i < jspProperties.length; ++i)
+        List<DocletTag> jspProperties = clazz.getTagsByName(DOC_JSP_ATTRIBUTE);
+        for (int i = 0; i < jspProperties.size(); ++i)
         {
             //We have here only doclets, because this part is only for
             //solve problems with binding property on 1.1
-            DocletTag tag = jspProperties[i];
+            DocletTag tag = jspProperties.get(i);
             
             Map props = tag.getNamedParameterMap();
-            processTagAttribute(props, (AbstractJavaEntity)tag.getContext(), clazz,
+            processTagAttribute(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                     ctag);
             
         }                
     }
 
-    private void processTagAttribute(Map props, AbstractJavaEntity ctx,
+    private void processTagAttribute(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, TagMeta tag)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -145,24 +146,24 @@ public class JspTagParsingStrategy extends ClassMetaParsingStrategy
         }
         String shortDescription = QdoxHelper.getString(clazz, "desc", props, descDflt);
                 
-        Type returnType = null;
+        JavaType returnType = null;
         
         if (method.getName().startsWith("set"))
         {
-            returnType = method.getParameters()[0].getType();
+            returnType = method.getParameters().get(0).getType();
         }
         else
         {
             returnType = method.getReturns();
         }
 
-        String fullyQualifiedReturnType = returnType.getJavaClass().getFullyQualifiedName();
+        String fullyQualifiedReturnType = returnType.getFullyQualifiedName();
         
         fullyQualifiedReturnType = QdoxHelper.getFullyQualifiedClassName(clazz,fullyQualifiedReturnType);
         
-        if (returnType.isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
+        if (((JavaClass)returnType).isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
         {
-            for (int i = 0; i < returnType.getDimensions();i++)
+            for (int i = 0; i < ((JavaClass)returnType).getDimensions();i++)
             {
                 fullyQualifiedReturnType = fullyQualifiedReturnType + "[]";
             }
@@ -189,7 +190,7 @@ public class JspTagParsingStrategy extends ClassMetaParsingStrategy
         tag.addAttribute(a);
     }
     
-    private void processTagAttribute(Map props, AbstractJavaEntity ctx,
+    private void processTagAttribute(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, TagMeta tag)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);

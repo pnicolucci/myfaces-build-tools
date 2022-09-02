@@ -43,7 +43,7 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 
-import com.thoughtworks.qdox.JavaDocBuilder;
+import com.thoughtworks.qdox.JavaProjectBuilder;
 
 /**
  * Maven goal to generate java source code for Behavior classes.
@@ -325,7 +325,7 @@ public class MakeClientBehaviorsMojo extends AbstractBuilderMojo
 
         
         //Init Qdox for extract code 
-        JavaDocBuilder builder = new JavaDocBuilder();
+        JavaProjectBuilder builder = new JavaProjectBuilder();
         
         List sourceDirs = project.getCompileSourceRoots();
         
@@ -440,7 +440,7 @@ public class MakeClientBehaviorsMojo extends AbstractBuilderMojo
      *            the parsed behavior metadata
      */
     private void _generateBehavior(VelocityEngine velocityEngine,
-            JavaDocBuilder builder,
+            JavaProjectBuilder builder,
             BehaviorMeta behavior, VelocityContext baseContext,
             Properties cachedInfo, long lastModifiedMetadata)
             throws MojoExecutionException

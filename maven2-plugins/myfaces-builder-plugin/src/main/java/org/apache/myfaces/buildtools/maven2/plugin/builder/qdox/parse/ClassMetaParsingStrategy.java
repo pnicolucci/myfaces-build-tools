@@ -72,11 +72,11 @@ public abstract class ClassMetaParsingStrategy implements JavaClassParsingStrate
         }
 
         // interfaces metadata is inherited from
-        JavaClass[] classes = clazz.getImplementedInterfaces();
+        List classes = clazz.getImplements();
         List ifaceNames = new ArrayList();
-        for (int i = 0; i < classes.length; ++i)
+        for (int i = 0; i < classes.size(); ++i)
         {
-            JavaClass iclazz = classes[i];
+            JavaClass iclazz = (JavaClass)classes.get(i);
 
             ComponentMeta ifaceComponent = model
                     .findComponentByClassName(iclazz.getFullyQualifiedName());

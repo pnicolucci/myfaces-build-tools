@@ -18,6 +18,7 @@
  */
 package org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse;
 
+import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -30,13 +31,13 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.ListenerMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
 import com.thoughtworks.qdox.model.JavaMethod;
-import com.thoughtworks.qdox.model.Type;
+import com.thoughtworks.qdox.model.JavaType;
 
 /**
  * 
@@ -52,23 +53,23 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag;
-        Annotation anno;
+        JavaAnnotation anno;
         // components
-        tag = clazz.getTagByName(DOC_COMPONENT, false);
+        tag = clazz.getTagsByName(DOC_COMPONENT, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processComponent(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processComponent(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_COMPONENT);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processComponent(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processComponent(props, (JavaAnnotatedElement)anno, clazz, model);
         }
     }
 
-    private void processComponent(Map props, AbstractJavaEntity ctx,
+    private void processComponent(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String componentTypeDflt = null;
@@ -154,10 +155,10 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         {
             component.setOverrideDefaultEventName(Boolean.TRUE);
         }
-        JavaClass[] interfaces = clazz.getImplementedInterfaces();
-        for (int i = 0; i < interfaces.length; ++i)
+        List<JavaClass> interfaces = clazz.getInterfaces();
+        for (int i = 0; i < interfaces.size(); ++i)
         {
-            JavaClass iface = interfaces[i];
+            JavaClass iface = interfaces.get(i);
             if (iface.getFullyQualifiedName().equals(
                     "jakarta.faces.component.NamingContainer"))
             {
@@ -204,58 +205,58 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
     private void processComponentFacets(JavaClass clazz,
             FacetHolder component)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName(DOC_FACET);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processComponentFacet(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processComponentFacet(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, component);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_FACET);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_FACET);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processComponentFacet(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processComponentFacet(props, (JavaAnnotatedElement)anno, clazz,
                         method, component);
             }
         }
         
-        Type [] interfaces = clazz.getImplements();
+        List<JavaType> interfaces = clazz.getImplements();
         
         //Scan interfaces for properties to be added to this component
         //This feature allow us to have groups of functions.
-        for (int i = 0; i < interfaces.length;++i)
+        for (int i = 0; i < interfaces.size();++i)
         {
-            JavaClass intf = interfaces[i].getJavaClass();
+            JavaClass intf = (JavaClass)interfaces.get(i);
 
             //If the interfaces has a JSFComponent Doclet,
             //this is managed in other way
-            if (intf.getTagByName(DOC_COMPONENT, false) == null)
+            if (intf.getTagsByName(DOC_COMPONENT, false).get(0) == null)
             {
-                JavaMethod[] intfmethods = intf.getMethods();
-                for (int j = 0; j < intfmethods.length; ++j)
+                List<JavaMethod> intfmethods = intf.getMethods();
+                for (int j = 0; j < intfmethods.size(); ++j)
                 {
-                    JavaMethod intfmethod = intfmethods[j];
+                    JavaMethod intfmethod = intfmethods.get(j);
 
                     DocletTag tag = intfmethod.getTagByName(DOC_FACET);
                     if (tag != null)
                     {
                         Map props = tag.getNamedParameterMap();
-                        processInterfaceComponentFacet(props, (AbstractJavaEntity)tag.getContext(), 
+                        processInterfaceComponentFacet(props, (JavaAnnotatedElement)tag.getContext(), 
                                 clazz, intfmethod, component);
                     }
 
-                    Annotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_FACET);
+                    JavaAnnotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_FACET);
                     if (anno != null)
                     {
                         Map props = anno.getNamedParameterMap();
-                        processInterfaceComponentFacet(props, (AbstractJavaEntity)anno.getContext(),
+                        processInterfaceComponentFacet(props, (JavaAnnotatedElement)anno,
                                 clazz, intfmethod, component);
                     }
                 }
@@ -263,7 +264,7 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         }
     }
     
-    private void processInterfaceComponentFacet(Map props, AbstractJavaEntity ctx,
+    private void processInterfaceComponentFacet(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, FacetHolder component)
     {
         this.processComponentFacet(props, ctx, clazz, method, component);
@@ -281,7 +282,7 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         }            
     }
     
-    private void processInterfaceComponentListener(Map props, AbstractJavaEntity ctx,
+    private void processInterfaceComponentListener(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, ListenerHolder component)
     {
         this.processComponentListener(props, ctx, clazz, method, component);
@@ -302,58 +303,58 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
     private void processComponentListeners(JavaClass clazz,
             ListenerHolder component)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName(DOC_LISTENER);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processComponentListener(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processComponentListener(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, component);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_LISTENER);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_LISTENER);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processComponentListener(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processComponentListener(props, (JavaAnnotatedElement)anno, clazz,
                         method, component);
             }
         }
         
-        Type [] interfaces = clazz.getImplements();
+        List<JavaType> interfaces = clazz.getImplements();
         
         //Scan interfaces for properties to be added to this component
         //This feature allow us to have groups of functions.
-        for (int i = 0; i < interfaces.length;++i)
+        for (int i = 0; i < interfaces.size();++i)
         {
-            JavaClass intf = interfaces[i].getJavaClass();
+            JavaClass intf = (JavaClass)interfaces.get(i);
 
             //If the interfaces has a JSFComponent Doclet,
             //this is managed in other way
-            if (intf.getTagByName(DOC_COMPONENT, false) == null)
+            if (intf.getTagsByName(DOC_COMPONENT, false).get(0) == null)
             {
-                JavaMethod[] intfmethods = intf.getMethods();
-                for (int j = 0; j < intfmethods.length; ++j)
+                List<JavaMethod> intfmethods = intf.getMethods();
+                for (int j = 0; j < intfmethods.size(); ++j)
                 {
-                    JavaMethod intfmethod = intfmethods[j];
+                    JavaMethod intfmethod = intfmethods.get(j);
 
                     DocletTag tag = intfmethod.getTagByName(DOC_LISTENER);
                     if (tag != null)
                     {
                         Map props = tag.getNamedParameterMap();
-                        processInterfaceComponentListener(props, (AbstractJavaEntity)tag.getContext(), 
+                        processInterfaceComponentListener(props, (JavaAnnotatedElement)tag.getContext(), 
                                 clazz, intfmethod, component);
                     }
 
-                    Annotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_LISTENER);
+                    JavaAnnotation anno = QdoxHelper.getAnnotation(intfmethod, DOC_LISTENER);
                     if (anno != null)
                     {
                         Map props = anno.getNamedParameterMap();
-                        processInterfaceComponentListener(props, (AbstractJavaEntity)anno.getContext(),
+                        processInterfaceComponentListener(props, (JavaAnnotatedElement)anno,
                                 clazz, intfmethod, component);
                     }
                 }
@@ -361,7 +362,7 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         }
     }
     
-    private void processComponentFacet(Map props, AbstractJavaEntity ctx,
+    private void processComponentFacet(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, FacetHolder component)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -389,7 +390,7 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         component.addFacet(p);
     }
     
-    private void processComponentListener(Map props, AbstractJavaEntity ctx,
+    private void processComponentListener(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, ListenerHolder component)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -402,18 +403,18 @@ public class ComponentParsingStrategy extends ClassMetaPropertyParsingStrategy
         }
         String shortDescription = QdoxHelper.getString(clazz, "desc", props, descDflt);
         
-        Type returnType = null;
+        JavaType returnType = null;
         
         if (method.getName().startsWith("set"))
         {
-            returnType = method.getParameters()[0].getType();
+            returnType = method.getParameters().get(0).getType();
         }
         else
         {
             returnType = method.getReturns();
         }
         
-        String fullyQualifiedReturnType = returnType.getJavaClass().getFullyQualifiedName();
+        String fullyQualifiedReturnType = returnType.getFullyQualifiedName();
         fullyQualifiedReturnType = QdoxHelper.getFullyQualifiedClassName(clazz, fullyQualifiedReturnType);
         fullyQualifiedReturnType = QdoxHelper.getString(clazz, "clazz", props, fullyQualifiedReturnType);
         

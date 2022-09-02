@@ -24,8 +24,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.RenderKitMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 
@@ -42,23 +42,23 @@ public class RenderKitParsingStrategy implements JavaClassParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag = null;
-        Annotation anno = null;
+        JavaAnnotation anno = null;
         // renderKit
-        tag = clazz.getTagByName(DOC_RENDERKIT, false);
+        tag = clazz.getTagsByName(DOC_RENDERKIT, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processRenderKit(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processRenderKit(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_RENDERKIT);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processRenderKit(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processRenderKit(props, (JavaAnnotatedElement)anno, clazz, model);
         }
     }
     
-    private void processRenderKit(Map props, AbstractJavaEntity ctx,
+    private void processRenderKit(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
 

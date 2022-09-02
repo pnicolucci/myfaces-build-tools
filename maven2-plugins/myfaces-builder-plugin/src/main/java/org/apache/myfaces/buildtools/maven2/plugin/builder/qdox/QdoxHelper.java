@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -43,9 +44,9 @@ import org.codehaus.plexus.components.io.fileselectors.FileInfo;
 import org.codehaus.plexus.components.io.fileselectors.FileSelector;
 import org.codehaus.plexus.components.io.fileselectors.IncludeExcludeFileSelector;
 
-import com.thoughtworks.qdox.JavaDocBuilder;
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.JavaProjectBuilder;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.JavaClass;
 
 /**
@@ -242,17 +243,17 @@ public class QdoxHelper
         }
     }
 
-    public static Annotation getAnnotation(AbstractJavaEntity entity, String annoName)
+    public static JavaAnnotation getAnnotation(JavaAnnotatedElement entity, String annoName)
     {
-        Annotation[] annos = entity.getAnnotations();
+        List<JavaAnnotation> annos = entity.getAnnotations();
         if (annos == null)
         {
             return null;
         }
         // String wanted = ANNOTATION_BASE + "." + annoName;
-        for (int i = 0; i < annos.length; ++i)
+        for (int i = 0; i < annos.size(); ++i)
         {
-            Annotation thisAnno = annos[i];
+            JavaAnnotation thisAnno = annos.get(i);
             // Ideally, here we would check whether the fully-qualified name of
             // the annotation
             // class matches ANNOTATION_BASE + "." + annoName. However it
@@ -262,7 +263,7 @@ public class QdoxHelper
             // Annotation.getType.getJavaClass.getFullyQualifiedName still just
             // returns the short
             // class name. So for now, just check for the short name.
-            String thisAnnoName = thisAnno.getType().getJavaClass().getName();
+            String thisAnnoName = thisAnno.getType().getName();
             
             //Make short name for recognizing, if returns long
             int containsPoint = thisAnnoName.lastIndexOf('.');
@@ -333,14 +334,14 @@ public class QdoxHelper
     }
     
     @Deprecated
-    public static void addFileToJavaDocBuilder(JavaDocBuilder builder,
+    public static void addFileToJavaProjectBuilder(JavaProjectBuilder builder,
             FileSelector selector, File path)
     {
-        addFileToJavaDocBuilder(builder,selector, path, path.getPath());
+        addFileToJavaProjectBuilder(builder,selector, path, path.getPath());
     }
     
     @Deprecated
-    public static void addFileToJavaDocBuilder(JavaDocBuilder builder,
+    public static void addFileToJavaProjectBuilder(JavaProjectBuilder builder,
             FileSelector selector, File path, String basePath)
     {
         if (path.isDirectory())
@@ -350,7 +351,7 @@ public class QdoxHelper
             //Scan all files in directory
             for (int i = 0; i < files.length; i++)
             {
-                addFileToJavaDocBuilder(builder, selector, files[i], basePath);
+                addFileToJavaProjectBuilder(builder, selector, files[i], basePath);
             }
         }
         else
@@ -582,7 +583,7 @@ public class QdoxHelper
     @Deprecated
     private static JavaClass[] getInnerSourceClasses(List sourceDirs, String includes, String excludes)
     {
-        JavaDocBuilder builder = new JavaDocBuilder();
+        JavaProjectBuilder builder = new JavaProjectBuilder();
         IncludeExcludeFileSelector selector = 
             new IncludeExcludeFileSelector(); 
         if (StringUtils.isNotEmpty(excludes))
@@ -606,22 +607,27 @@ public class QdoxHelper
                 new File((String) i.next());
             }
             //Scan all files on directory and add to builder
-            QdoxHelper.addFileToJavaDocBuilder(builder, selector, srcDir);
-        }        
+            QdoxHelper.addFileToJavaProjectBuilder(builder, selector, srcDir);
+        }
         
-        return builder.getClasses();
+        Collection<JavaClass> classes = builder.getClasses();
+        
+        return classes.toArray(new JavaClass[classes.size()]);
     }
 
     @Deprecated
     private static JavaClass[] getInnerSourceClasses(List sourceDirs)
     {
-        JavaDocBuilder builder = new JavaDocBuilder();
+        JavaProjectBuilder builder = new JavaProjectBuilder();
         for (Iterator i = sourceDirs.iterator(); i.hasNext();)
         {
             String srcDir = (String) i.next();
             builder.addSourceTree(new File(srcDir));
         }
-        return builder.getClasses();
+        
+        Collection<JavaClass> classes = builder.getClasses();
+        
+        return classes.toArray(new JavaClass[classes.size()]);
     }
     
     public static class JavaClassComparator implements Comparator

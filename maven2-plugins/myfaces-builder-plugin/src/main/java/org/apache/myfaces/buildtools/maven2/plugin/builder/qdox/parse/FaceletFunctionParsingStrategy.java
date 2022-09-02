@@ -18,6 +18,7 @@
  */
 package org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -25,8 +26,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.FaceletFunction
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
@@ -44,30 +45,30 @@ public class FaceletFunctionParsingStrategy implements JavaClassParsingStrategy
 
     public void parseClass(JavaClass clazz, Model model)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName(DOC_FACELET_FUNCTION);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processFaceletFunction(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processFaceletFunction(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, model);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_FACELET_FUNCTION);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_FACELET_FUNCTION);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processFaceletFunction(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processFaceletFunction(props, (JavaAnnotatedElement)anno, clazz,
                         method, model);
             }
         }
     }
     
-    private void processFaceletFunction(Map props, AbstractJavaEntity ctx,
+    private void processFaceletFunction(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, Model model)
     {
         String name = QdoxHelper.getString(clazz, "name", props, null);
@@ -88,16 +89,16 @@ public class FaceletFunctionParsingStrategy implements JavaClassParsingStrategy
         if (signature == null)
         {
             StringBuilder sb = new StringBuilder();
-            sb.append(method.getReturnType().getJavaClass().getFullyQualifiedName());
+            sb.append(method.getReturnType().getFullyQualifiedName());
             sb.append(' ');
             sb.append(method.getName());
             sb.append('(');
             sb.append(' ');
-            JavaParameter[] jp = method.getParameters();
-            for (int i = 0; i < jp.length ; i++)
+            List<JavaParameter> jp = method.getParameters();
+            for (int i = 0; i < jp.size() ; i++)
             {
-                sb.append(jp[i].getType().getJavaClass().getFullyQualifiedName());
-                if (i+1 < jp.length)
+                sb.append(jp.get(i).getType().getFullyQualifiedName());
+                if (i+1 < jp.size())
                 {
                     sb.append(',');
                     sb.append(' ');

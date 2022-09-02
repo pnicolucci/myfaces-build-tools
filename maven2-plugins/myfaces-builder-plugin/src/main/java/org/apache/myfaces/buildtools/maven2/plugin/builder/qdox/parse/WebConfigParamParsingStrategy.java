@@ -18,6 +18,7 @@
  */
 package org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
@@ -25,8 +26,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.WebConfigMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.WebConfigParamMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
@@ -44,7 +45,7 @@ public class WebConfigParamParsingStrategy implements JavaClassParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag;
-        Annotation anno;
+        JavaAnnotation anno;
         WebConfigMeta webConfig = model.findWebConfigsByModelId(model.getModelId());
         boolean createWebConfig = false;
         if (webConfig == null)
@@ -54,22 +55,22 @@ public class WebConfigParamParsingStrategy implements JavaClassParsingStrategy
             webConfig.setModelId(model.getModelId());
         }
         //Web Config Params
-        JavaField[] fields = clazz.getFields();
-        for (int i = 0; i < fields.length; ++i)
+        List<JavaField> fields = clazz.getFields();
+        for (int i = 0; i < fields.size(); ++i)
         {
-            JavaField field = fields[i];
+            JavaField field = fields.get(i);
             tag = field.getTagByName(DOC_WEB_CONFIG_PARAM);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processWebConfigParam(props, (AbstractJavaEntity)tag.getContext(), 
+                processWebConfigParam(props, (JavaAnnotatedElement)tag.getContext(), 
                         clazz, field, webConfig);
             }
             anno = QdoxHelper.getAnnotation(field, DOC_WEB_CONFIG_PARAM);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processWebConfigParam(props, (AbstractJavaEntity)anno.getContext(),
+                processWebConfigParam(props, (JavaAnnotatedElement)anno,
                         clazz, field, webConfig);
             }
         }
@@ -79,7 +80,7 @@ public class WebConfigParamParsingStrategy implements JavaClassParsingStrategy
         }
     }
     
-    private void processWebConfigParam(Map props, AbstractJavaEntity ctx,
+    private void processWebConfigParam(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaField field, WebConfigMeta webConfig)
     {
         String longDescription = field.getComment();

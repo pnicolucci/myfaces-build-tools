@@ -24,8 +24,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.ValidatorMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
@@ -43,24 +43,24 @@ public class ValidatorParsingStrategy extends ClassMetaPropertyParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag;
-        Annotation anno;
+        JavaAnnotation anno;
         // validators
-        tag = clazz.getTagByName(DOC_VALIDATOR, false);
+        tag = clazz.getTagsByName(DOC_VALIDATOR, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processValidator(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processValidator(props, (JavaAnnotatedElement)tag, clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_VALIDATOR);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processValidator(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processValidator(props, (JavaAnnotatedElement)anno, clazz, model);
         }
 
     }
     
-    private void processValidator(Map props, AbstractJavaEntity ctx,
+    private void processValidator(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String longDescription = clazz.getComment();

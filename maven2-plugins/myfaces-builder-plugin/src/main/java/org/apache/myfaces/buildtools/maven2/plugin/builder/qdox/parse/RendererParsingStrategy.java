@@ -26,8 +26,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.RenderKitMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.RendererMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 
@@ -45,49 +45,49 @@ public class RendererParsingStrategy implements JavaClassParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag = null;
-        Annotation anno = null;
+        JavaAnnotation anno = null;
         // renderer
-        DocletTag [] tags = clazz.getTagsByName(DOC_RENDERER, false);
-        for (int i = 0; i < tags.length; i++)
+        List<DocletTag> tags = clazz.getTagsByName(DOC_RENDERER, false);
+        for (int i = 0; i < tags.size(); i++)
         {
-            tag = tags[i];
+            tag = tags.get(i);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processRenderer(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+                processRenderer(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
             }
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_RENDERER);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processRenderer(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processRenderer(props, (JavaAnnotatedElement)anno, clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_RENDERERS);
         if (anno != null)
         {
             Object jspProps = anno.getNamedParameter("renderers");
             
-            if (jspProps instanceof Annotation)
+            if (jspProps instanceof JavaAnnotation)
             {
-                Annotation jspPropertiesAnno = (Annotation) jspProps;
+                JavaAnnotation jspPropertiesAnno = (JavaAnnotation) jspProps;
                 Map props = jspPropertiesAnno.getNamedParameterMap();
-                processRenderer(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+                processRenderer(props, (JavaAnnotatedElement)anno, clazz, model);
             }
             else
             {
                 List jspPropsList = (List) jspProps;
                 for (int i = 0; i < jspPropsList.size();i++)
                 {
-                    Annotation ranno = (Annotation) jspPropsList.get(i);
+                    JavaAnnotation ranno = (JavaAnnotation) jspPropsList.get(i);
                     Map props = ranno.getNamedParameterMap();
-                    processRenderer(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+                    processRenderer(props, (JavaAnnotatedElement)anno, clazz, model);
                 }
             }
         }
     }
     
-    private void processRenderer(Map props, AbstractJavaEntity ctx,
+    private void processRenderer(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String longDescription = clazz.getComment();

@@ -26,13 +26,13 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.FaceletTagMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
 import com.thoughtworks.qdox.model.JavaMethod;
-import com.thoughtworks.qdox.model.Type;
+import com.thoughtworks.qdox.model.JavaType;
 
 /**
  * 
@@ -50,44 +50,44 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag = null;
-        Annotation anno = null;
+        JavaAnnotation anno = null;
         //facelet tagHandler
-        tag = clazz.getTagByName(DOC_FACELET_TAG, false);
+        tag = clazz.getTagsByName(DOC_FACELET_TAG, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processFaceletTag(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processFaceletTag(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAG);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processFaceletTag(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processFaceletTag(props, (JavaAnnotatedElement)anno, clazz, model);
         }        
         anno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAGS);
         if (anno != null)
         {
             Object jspProps = anno.getNamedParameter("tags");
-            if (jspProps instanceof Annotation)
+            if (jspProps instanceof JavaAnnotation)
             {
-                Annotation jspPropertiesAnno = (Annotation) jspProps;
+                JavaAnnotation jspPropertiesAnno = (JavaAnnotation) jspProps;
                 Map props = jspPropertiesAnno.getNamedParameterMap();
-                processFaceletTag(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+                processFaceletTag(props, (JavaAnnotatedElement)anno, clazz, model);
             }
             else
             {
                 List jspPropsList = (List) jspProps;
                 for (int i = 0; i < jspPropsList.size();i++)
                 {
-                    Annotation ranno = (Annotation) jspPropsList.get(i);
+                    JavaAnnotation ranno = (JavaAnnotation) jspPropsList.get(i);
                     Map props = ranno.getNamedParameterMap();
-                    processFaceletTag(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+                    processFaceletTag(props, (JavaAnnotatedElement)anno, clazz, model);
                 }
             }
         }        
     }
     
-    private void processFaceletTag(Map props, AbstractJavaEntity ctx,
+    private void processFaceletTag(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String longDescription = clazz.getComment();
@@ -132,78 +132,78 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
     private void processFaceletTagAttributes(JavaClass clazz,
             FaceletTagMeta ctag)
     {
-        JavaMethod[] methods = clazz.getMethods();
-        for (int i = 0; i < methods.length; ++i)
+        List<JavaMethod> methods = clazz.getMethods();
+        for (int i = 0; i < methods.size(); ++i)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName(DOC_FACELET_TAG_ATTRIBUTE);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processFaceletTagAttribute(props, (AbstractJavaEntity)tag.getContext(), clazz,
+                processFaceletTagAttribute(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                         method, ctag);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(method, DOC_FACELET_TAG_ATTRIBUTE);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(method, DOC_FACELET_TAG_ATTRIBUTE);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processFaceletTagAttribute(props, (AbstractJavaEntity)anno.getContext(), clazz,
+                processFaceletTagAttribute(props, (JavaAnnotatedElement)anno, clazz,
                         method, ctag);
             }
         }
         
-        JavaField[] fields = clazz.getFields();
-        for (int i = 0; i < fields.length; ++i)
+        List<JavaField> fields = clazz.getFields();
+        for (int i = 0; i < fields.size(); ++i)
         {
-            JavaField field = fields[i];
+            JavaField field = fields.get(i);
             DocletTag tag = field.getTagByName(DOC_FACELET_TAG_ATTRIBUTE);
             if (tag != null)
             {
                 Map props = tag.getNamedParameterMap();
-                processFaceletTagAttribute(props, (AbstractJavaEntity)tag.getContext(), clazz, field, ctag);
+                processFaceletTagAttribute(props, (JavaAnnotatedElement)tag.getContext(), clazz, field, ctag);
             }
 
-            Annotation anno = QdoxHelper.getAnnotation(field, DOC_FACELET_TAG_ATTRIBUTE);
+            JavaAnnotation anno = QdoxHelper.getAnnotation(field, DOC_FACELET_TAG_ATTRIBUTE);
             if (anno != null)
             {
                 Map props = anno.getNamedParameterMap();
-                processFaceletTagAttribute(props, (AbstractJavaEntity)anno.getContext(), clazz, field, ctag);
+                processFaceletTagAttribute(props, (JavaAnnotatedElement)anno, clazz, field, ctag);
             }
         }
         
-        DocletTag[] jspProperties = clazz.getTagsByName(DOC_FACELET_TAG_ATTRIBUTE);
-        for (int i = 0; i < jspProperties.length; ++i)
+        List<DocletTag> jspProperties = clazz.getTagsByName(DOC_FACELET_TAG_ATTRIBUTE);
+        for (int i = 0; i < jspProperties.size(); ++i)
         {
             //We have here only doclets, because this part is only for
             //solve problems with binding property on 1.1
-            DocletTag tag = jspProperties[i];
+            DocletTag tag = jspProperties.get(i);
             
             Map props = tag.getNamedParameterMap();
-            processFaceletTagAttribute(props, (AbstractJavaEntity)tag.getContext(), clazz,
+            processFaceletTagAttribute(props, (JavaAnnotatedElement)tag.getContext(), clazz,
                     ctag);
             
         }
         
-        Annotation jspPropertyAnno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAG_ATTRIBUTE);
+        JavaAnnotation jspPropertyAnno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAG_ATTRIBUTE);
         if (jspPropertyAnno != null)
         {
             Map props = jspPropertyAnno.getNamedParameterMap();
-            processFaceletTagAttribute(props, (AbstractJavaEntity)jspPropertyAnno.getContext(),
+            processFaceletTagAttribute(props, (JavaAnnotatedElement)jspPropertyAnno,
                     clazz, ctag);
         }
         
-        Annotation jspAnno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAG_ATTRIBUTES);        
+        JavaAnnotation jspAnno = QdoxHelper.getAnnotation(clazz, DOC_FACELET_TAG_ATTRIBUTES);        
         if (jspAnno != null)
         {
             Object jspProps = jspAnno.getNamedParameter("attributes");
             
-            if (jspProps instanceof Annotation)
+            if (jspProps instanceof JavaAnnotation)
             {
-                Annotation jspPropertiesAnno = (Annotation) jspProps;
+                JavaAnnotation jspPropertiesAnno = (JavaAnnotation) jspProps;
                 Map props = jspPropertiesAnno.getNamedParameterMap();
-                processFaceletTagAttribute(props, (AbstractJavaEntity)jspAnno.getContext(), clazz,
+                processFaceletTagAttribute(props, (JavaAnnotatedElement)jspAnno, clazz,
                         ctag);
             }
             else
@@ -211,10 +211,10 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
                 List jspPropsList = (List) jspProps;
                 for (int i = 0; i < jspPropsList.size();i++)
                 {
-                    Annotation anno = (Annotation) jspPropsList.get(i);
+                    JavaAnnotation anno = (JavaAnnotation) jspPropsList.get(i);
 
                     Map props = anno.getNamedParameterMap();
-                    processFaceletTagAttribute(props, (AbstractJavaEntity)jspAnno.getContext(), clazz,
+                    processFaceletTagAttribute(props, (JavaAnnotatedElement)jspAnno, clazz,
                             ctag);                    
                 }
             }
@@ -222,7 +222,7 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
     }
     
 
-    private void processFaceletTagAttribute(Map props, AbstractJavaEntity ctx,
+    private void processFaceletTagAttribute(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaMethod method, FaceletTagMeta tag)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -236,24 +236,24 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
         }
         String shortDescription = QdoxHelper.getString(clazz, "desc", props, descDflt);
                 
-        Type returnType = null;
+        JavaType returnType = null;
         
         if (method.getName().startsWith("set"))
         {
-            returnType = method.getParameters()[0].getType();
+            returnType = method.getParameters().get(0).getType();
         }
         else
         {
             returnType = method.getReturns();
         }
 
-        String fullyQualifiedReturnType = returnType.getJavaClass().getFullyQualifiedName();
+        String fullyQualifiedReturnType = returnType.getFullyQualifiedName();
         
         fullyQualifiedReturnType = QdoxHelper.getFullyQualifiedClassName(clazz,fullyQualifiedReturnType);
         
-        if (returnType.isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
+        if (((JavaClass)returnType).isArray() && (fullyQualifiedReturnType.indexOf('[') == -1))
         {
-            for (int i = 0; i < returnType.getDimensions();i++)
+            for (int i = 0; i < ((JavaClass)returnType).getDimensions();i++)
             {
                 fullyQualifiedReturnType = fullyQualifiedReturnType + "[]";
             }
@@ -278,7 +278,7 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
         tag.addAttribute(a);
     }
 
-    private void processFaceletTagAttribute(Map props, AbstractJavaEntity ctx,
+    private void processFaceletTagAttribute(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, FaceletTagMeta tag)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);
@@ -312,7 +312,7 @@ public class FaceletTagParsingStrategy extends ClassMetaParsingStrategy
         tag.addAttribute(a);
     }
 
-    private void processFaceletTagAttribute(Map props, AbstractJavaEntity ctx,
+    private void processFaceletTagAttribute(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, JavaField field, FaceletTagMeta tag)
     {
         Boolean required = QdoxHelper.getBoolean(clazz, "required", props, null);

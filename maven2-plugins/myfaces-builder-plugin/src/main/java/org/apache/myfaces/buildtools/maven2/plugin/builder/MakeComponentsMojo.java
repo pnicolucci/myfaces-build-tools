@@ -44,9 +44,9 @@ import org.apache.velocity.runtime.RuntimeConstants;
 import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.StringUtils;
 
-import com.thoughtworks.qdox.JavaDocBuilder;
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.JavaProjectBuilder;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
@@ -352,7 +352,7 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
 
         
         //Init Qdox for extract code 
-        JavaDocBuilder builder = new JavaDocBuilder();
+        JavaProjectBuilder builder = new JavaProjectBuilder();
         
         List sourceDirs = project.getCompileSourceRoots();
         
@@ -481,7 +481,7 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
      *            the parsed component metadata
      */
     private void _generateComponent(VelocityEngine velocityEngine,
-            JavaDocBuilder builder,
+            JavaProjectBuilder builder,
             ComponentMeta component, VelocityContext baseContext,
             Properties cachedInfo, long lastModifiedMetadata)
             throws MojoExecutionException
@@ -546,21 +546,21 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
      * @param component
      * @return
      */
-    private String getInnerSourceCode(JavaDocBuilder builder, ComponentMeta component)
+    private String getInnerSourceCode(JavaProjectBuilder builder, ComponentMeta component)
     {   
         StringWriter writer = new StringWriter();
         
         JavaClass sourceClass = builder.getClassByName(component.getSourceClassName());
         
-        JavaField [] fields = sourceClass.getFields();
+        List<JavaField> fields = sourceClass.getFields();
 
         //Include the fields defined
-        for (int i = 0; i < fields.length; i++)
+        for (int i = 0; i < fields.size(); i++)
         {            
-            JavaField field = fields[i];
+            JavaField field = fields.get(i);
             
             DocletTag tag = field.getTagByName("JSFExclude");
-            Annotation anno = getAnnotation(field, "JSFExclude");
+            JavaAnnotation anno = getAnnotation(field, "JSFExclude");
             
             if (!(tag == null && anno == null))
             {
@@ -570,7 +570,7 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
             if (!isExcludedField(field.getName()))
             {
                 writer.write("    ");
-                writer.write(field.getDeclarationSignature(true));
+                writer.write(((JavaMethod)field).getDeclarationSignature(true));
                 String initExpr = field.getInitializationExpression();
                 initExpr = cleanInitializationExpression(initExpr);
                 if (initExpr != null)
@@ -583,13 +583,13 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
             }
         }
         
-        JavaMethod [] methods = sourceClass.getMethods();
-        for (int i = 0; i < methods.length; i++)
+        List<JavaMethod> methods = sourceClass.getMethods();
+        for (int i = 0; i < methods.size(); i++)
         {
-            JavaMethod method = methods[i];
+            JavaMethod method = methods.get(i);
 
             DocletTag tag = method.getTagByName("JSFExclude");
-            Annotation anno = getAnnotation(method, "JSFExclude");
+            JavaAnnotation anno = getAnnotation(method, "JSFExclude");
             
             if (!(tag == null && anno == null))
             {
@@ -705,17 +705,17 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
      * @param annoName
      * @return
      */
-    private Annotation getAnnotation(AbstractJavaEntity entity, String annoName)
+    private JavaAnnotation getAnnotation(JavaAnnotatedElement entity, String annoName)
     {
-        Annotation[] annos = entity.getAnnotations();
+        List<JavaAnnotation> annos = entity.getAnnotations();
         if (annos == null)
         {
             return null;
         }
         // String wanted = ANNOTATION_BASE + "." + annoName;
-        for (int i = 0; i < annos.length; ++i)
+        for (int i = 0; i < annos.size(); ++i)
         {
-            Annotation thisAnno = annos[i];
+            JavaAnnotation thisAnno = annos.get(i);
             // Ideally, here we would check whether the fully-qualified name of
             // the annotation
             // class matches ANNOTATION_BASE + "." + annoName. However it
@@ -725,7 +725,7 @@ public class MakeComponentsMojo extends AbstractBuilderMojo
             // Annotation.getType.getJavaClass.getFullyQualifiedName still just
             // returns the short
             // class name. So for now, just check for the short name.
-            String thisAnnoName = thisAnno.getType().getJavaClass().getName();
+            String thisAnnoName = thisAnno.getType().getName();
             
             //Make short name for recognizing, if returns long
             int containsPoint = thisAnnoName.lastIndexOf('.');

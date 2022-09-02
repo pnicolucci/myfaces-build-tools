@@ -24,8 +24,8 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.model.BehaviorMeta;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.model.Model;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.QdoxHelper;
 
-import com.thoughtworks.qdox.model.AbstractJavaEntity;
-import com.thoughtworks.qdox.model.Annotation;
+import com.thoughtworks.qdox.model.JavaAnnotatedElement;
+import com.thoughtworks.qdox.model.JavaAnnotation;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaField;
@@ -43,23 +43,23 @@ public class BehaviorParsingStrategy extends ClassMetaPropertyParsingStrategy
     public void parseClass(JavaClass clazz, Model model)
     {
         DocletTag tag;
-        Annotation anno;
+        JavaAnnotation anno;
         // behaviors
-        tag = clazz.getTagByName(DOC_BEHAVIOR, false);
+        tag = clazz.getTagsByName(DOC_BEHAVIOR, false).get(0);
         if (tag != null)
         {
             Map props = tag.getNamedParameterMap();
-            processBehavior(props, (AbstractJavaEntity)tag.getContext(), clazz, model);
+            processBehavior(props, (JavaAnnotatedElement)tag.getContext(), clazz, model);
         }
         anno = QdoxHelper.getAnnotation(clazz, DOC_BEHAVIOR);
         if (anno != null)
         {
             Map props = anno.getNamedParameterMap();
-            processBehavior(props, (AbstractJavaEntity)anno.getContext(), clazz, model);
+            processBehavior(props, (JavaAnnotatedElement)anno, clazz, model);
         }
     }
 
-    private void processBehavior(Map props, AbstractJavaEntity ctx,
+    private void processBehavior(Map props, JavaAnnotatedElement ctx,
             JavaClass clazz, Model model)
     {
         String longDescription = clazz.getComment();

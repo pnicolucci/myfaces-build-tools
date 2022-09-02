@@ -21,6 +21,9 @@ package org.apache.myfaces.buildtools.maven2.plugin.builder.qdox;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,7 +57,7 @@ import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse.ValidatorP
 import org.apache.myfaces.buildtools.maven2.plugin.builder.qdox.parse.WebConfigParamParsingStrategy;
 import org.apache.myfaces.buildtools.maven2.plugin.builder.trinidad.TrinidadMavenFacesPluginModelBuilder;
 
-import com.thoughtworks.qdox.JavaDocBuilder;
+import com.thoughtworks.qdox.JavaProjectBuilder;
 import com.thoughtworks.qdox.model.JavaClass;
 
 /**
@@ -83,7 +86,7 @@ public class QdoxModelBuilder implements ModelBuilder
             throw new MojoExecutionException("Model must have id set");
         }
         
-        final JavaDocBuilder builder = new JavaDocBuilder();
+        final JavaProjectBuilder builder = new JavaProjectBuilder();
         IOUtils.visitSources(parameters, new IOUtils.SourceVisitor()
         {
             public void processSource(File file) throws IOException
@@ -92,7 +95,8 @@ public class QdoxModelBuilder implements ModelBuilder
             }
             
         });
-        JavaClass[] classes = builder.getClasses();
+        //Collection<JavaClass> classes = builder.getClasses();
+        List<JavaClass> classes = new ArrayList<JavaClass>(builder.getClasses());
 
         buildModel(model, parameters.getSourceDirs(), classes);
         CompositeComponentModelBuilder qccmb = new CompositeComponentModelBuilder();
@@ -101,18 +105,19 @@ public class QdoxModelBuilder implements ModelBuilder
         tmfpmb.buildModel(model, parameters);
     }
 
-    protected void buildModel(Model model, List sourceDirs, JavaClass[] classes)
+    //protected void buildModel(Model model, List sourceDirs, Collection<JavaClass> classes)
+    protected void buildModel(Model model, List sourceDirs, List<JavaClass> classes)
         throws MojoExecutionException
     {
         String currModelId = model.getModelId();
         // Sort the class array so that they are processed in a
         // predictable order, regardless of how the source scanning
         // returned them.
-        Arrays.sort(classes, new QdoxHelper.JavaClassComparator());
+        Collections.sort(classes, new QdoxHelper.JavaClassComparator());
         Map processedClasses = new HashMap();
-        for (int i = 0; i < classes.length; ++i)
+        for (int i = 0; i < classes.size(); ++i)
         {
-            JavaClass clazz = classes[i];
+            JavaClass clazz = classes.get(i);
             processClass(processedClasses, clazz, model);
         }
         // Post-process the list of components which we added in this run.
@@ -247,10 +252,10 @@ public class QdoxModelBuilder implements ModelBuilder
         {
             processClass(processedClasses, parentClazz, model);
         }
-        JavaClass[] classes = clazz.getImplementedInterfaces();
-        for (int i = 0; i < classes.length; ++i)
+        List<JavaClass> classes = clazz.getInterfaces();
+        for (int i = 0; i < classes.size(); ++i)
         {
-            JavaClass iclazz = classes[i];
+            JavaClass iclazz = classes.get(i);
             processClass(processedClasses, iclazz, model);
         }
         // ok, now we can mark this class as processed.
